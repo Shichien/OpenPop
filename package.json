@@ -1,0 +1,13 @@
+{
+  "name": "path-of-pain-practice-verification",
+  "private": true,
+  "scripts": {
+    "verify:site:12620": "node tools/verify_site.cjs http://127.0.0.1:8011/ 1.5.12620 output/playwright/site-1.5.12620",
+    "verify:site:1578": "node tools/verify_site.cjs http://127.0.0.1:8011/ 1.5.78.11833 output/playwright/site-1.5.78.11833",
+    "verify:package:12620": "node tools/verify_package.cjs runtime/unity-webgl/practice-1.5.12620-live-timer-v57-formal output/playwright/package-1.5.12620",
+    "verify:package:1578": "node tools/verify_package.cjs runtime/unity-webgl/practice-1.5.78.11833 output/playwright/package-1.5.78.11833"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}

@@ -1,0 +1,11 @@
+services:
+  pop:
+    build: .
+    ports:
+      - "8011:8011"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

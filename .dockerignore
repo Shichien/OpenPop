@@ -1,0 +1,11 @@
+.env
+__pycache__/
+**/__pycache__/
+*.pyc
+data/*.log
+data/session-secret
+output/
+node_modules/
+runtime/unity-webgl/**/Build/*.data*
+runtime/unity-webgl/**/Build/*.wasm*
+runtime/unity-webgl/**/Build/*.framework.js*

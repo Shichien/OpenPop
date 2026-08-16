@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b0e">
+  <title>苦痛之路练习</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/unity-practice.css?v={{ asset_version }}">
+  <link rel="stylesheet" href="/static/social/social.css?v={{ asset_version }}">
+</head>
+<body>
+  <main class="practice-stage">
+    <section id="game-host" class="game-host" aria-label="苦痛之路练习场景">
+      <canvas id="replay-ghost-canvas" class="replay-ghost-canvas" aria-hidden="true"></canvas>
+      <section id="live-timer" class="live-timer" aria-label="苦痛之路计时器" hidden>
+        <ol id="timer-splits" class="timer-splits">
+          <li data-segment-index="0"><span>R1</span><time>—</time></li>
+          <li data-segment-index="1"><span>R2</span><time>—</time></li>
+          <li data-segment-index="2"><span>R3</span><time>—</time></li>
+          <li data-segment-index="3"><span>R4</span><time>—</time></li>
+        </ol>
+        <div class="live-timer-clock"><output id="timer-clock" aria-live="off">0.00</output></div>
+        <div class="live-timer-real"><output id="timer-real-clock">Real Time 0.00</output></div>
+        <footer class="live-timer-footer">
+          <div class="timer-actions">
+            <button id="timer-toggle" type="button" title="开始或暂停计时" aria-label="开始或暂停计时">&#9654;</button>
+            <button id="timer-split" type="button" title="手动分段" aria-label="手动分段">&#9197;</button>
+            <button id="timer-reset" type="button" title="重置计时" aria-label="重置计时">&#8635;</button>
+          </div>
+        </footer>
+      </section>
+      <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+        <div class="seal" aria-hidden="true"></div>
+        <p id="loading-title">正在检查官方运行包</p>
+        <div class="progress-track" aria-hidden="true">
+          <span id="progress-fill"></span>
+        </div>
+        <p id="loading-detail" class="loading-detail"></p>
+      </div>
+      <div id="error-screen" class="error-screen" role="alert" hidden>
+        <p>无法启动练习</p>
+        <strong id="error-message"></strong>
+      </div>
+    </section>
+
+    <aside id="debug-panel" class="debug-panel" aria-label="Debug 模式">
+      <button id="panel-toggle" class="panel-toggle" type="button" aria-expanded="true" title="收起 Debug 面板">
+        <span aria-hidden="true">&lt;</span>
+      </button>
+      <div class="debug-content">
+        <header class="practice-header">
+          <img class="panel-knight" src="/static/knight-ui.png?v={{ asset_version }}" alt="">
+          <h1>苦痛之路</h1>
+        </header>
+
+        <fieldset class="version-picker" aria-label="游戏版本">
+          <label class="version-option">
+            <input type="radio" name="game-version" value="1.5.78.11833">
+            <span>
+              <strong>1.5.78.11833</strong>
+            </span>
+          </label>
+          <label class="version-option">
+            <input type="radio" name="game-version" value="1.5.12620">
+            <span>
+              <strong>1.5.12620</strong>
+            </span>
+          </label>
+        </fieldset>
+
+        <fieldset class="debug-actions" aria-label="调试功能">
+          <button type="button" data-debug-method="ToggleNoclip" aria-pressed="false">飞行</button>
+          <button type="button" data-debug-method="ToggleInfiniteHealth" aria-pressed="false">无限血量</button>
+          <button type="button" data-debug-method="ToggleInfiniteSoul" aria-pressed="false">无限灵魂</button>
+          <button type="button" data-debug-method="SetHazardRespawn">设置保存点</button>
+          <button type="button" data-debug-method="SetPracticeReturnPoint">标记返回点</button>
+          <button type="button" data-debug-method="ReturnToMarkedPoint">返回标记点</button>
+        </fieldset>
+
+        <div id="social-replay-root" aria-label="Replay 社区"></div>
+        <div hidden aria-hidden="true">
+          <input id="replay-ghost-toggle" type="checkbox">
+          <select id="replay-ghost-run"></select>
+          <input id="replay-ghost-opacity" type="range" min="0.2" max="0.85" step="0.05" value="0.55">
+          <p id="replay-ghost-status"></p>
+        </div>
+      </div>
+      <section id="replay-export-prompt" class="replay-export-prompt" role="dialog" aria-labelledby="replay-export-title" hidden>
+        <div class="replay-export-summary" aria-live="polite">
+          <strong id="replay-export-title">Replay 已记录</strong>
+          <span id="replay-export-room"></span>
+          <span id="replay-export-time"></span>
+          <span id="replay-export-frames"></span>
+        </div>
+        <div class="replay-export-actions">
+          <button id="replay-export-download" type="button">导出 Replay</button>
+          <button id="replay-export-dismiss" type="button">暂不导出</button>
+        </div>
+        <p id="replay-export-error" role="alert" hidden></p>
+      </section>
+    </aside>
+  </main>
+  <script src="/static/unity-practice.js?v={{ asset_version }}"></script>
+  <script type="module" src="/static/social/social.js?v={{ asset_version }}"></script>
+</body>
+</html>
