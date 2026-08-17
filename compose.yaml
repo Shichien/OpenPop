@@ -6,6 +6,10 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      HOSTNAME: 0.0.0.0
+      PORT: 8011
+      POP_DATABASE_PATH: /app/data/replays.sqlite3
     volumes:
       - ./data:/app/data
     restart: unless-stopped

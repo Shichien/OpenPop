@@ -22,6 +22,11 @@ async function main() {
   }, version);
   const page = await context.newPage();
   const errors = [];
+  const heroResourceUrls = new Set();
+  page.on("request", (request) => {
+    const url = request.url();
+    if (url.includes("/generated/hero/")) heroResourceUrls.add(url);
+  });
   page.on("pageerror", (error) => errors.push(String(error)));
   page.on("console", (message) => {
     const line = message.text().split("\n", 1)[0];
@@ -68,6 +73,11 @@ async function main() {
     const pageState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
     ensure(pageState.runningVersion === version, `site selected wrong version: ${JSON.stringify(pageState)}`);
     ensure(pageState.practice?.currentRoom === "White_Palace_06", `site bridge did not receive room state: ${JSON.stringify(pageState)}`);
+    const siteOrigin = new URL(baseUrl).origin;
+    const heroResources = [...heroResourceUrls];
+    ensure(heroResources.some((url) => new URL(url).pathname.endsWith(".json")), "R2 hero manifest was not requested");
+    ensure(heroResources.filter((url) => new URL(url).pathname.endsWith(".png")).length >= 14, "R2 hero atlases were not requested");
+    ensure(heroResources.every((url) => new URL(url).origin !== siteOrigin), `hero resources used the application server: ${heroResources.join(" | ")}`);
     await page.screenshot({ path: path.join(outputDir, "site-seated.png") });
     const knownOfficialStartupErrors = [
       "Unsupported type: null",
@@ -79,7 +89,7 @@ async function main() {
       !knownOfficialStartupErrors.some((known) => line.trim().startsWith(known))
     ));
     ensure(unexpectedErrors.length === 0, `pop browser errors: ${unexpectedErrors.join(" | ")}`);
-    const summary = { baseUrl, version, state, pageState, errors, unexpectedErrors };
+    const summary = { baseUrl, version, state, pageState, heroResources, errors, unexpectedErrors };
     fs.writeFileSync(path.join(outputDir, "summary.json"), JSON.stringify(summary, null, 2));
     process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
   } finally {

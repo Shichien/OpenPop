@@ -1,11 +1,14 @@
 .env
+.next/
 __pycache__/
 **/__pycache__/
 *.pyc
+*.tsbuildinfo
 data/*
 !data/.gitkeep
 output/
 node_modules/
+runtime/hero/*.png
 runtime/unity-webgl/**/Build/*.data*
 runtime/unity-webgl/**/Build/*.wasm*
 runtime/unity-webgl/**/Build/*.framework.js*

@@ -1,13 +1,41 @@
 {
-  "name": "path-of-pain-practice-verification",
+  "name": "openpop",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node tools/start.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test && npm run build",
     "verify:site:12620": "node tools/verify_site.cjs http://127.0.0.1:8011/ 1.5.12620 output/playwright/site-1.5.12620",
     "verify:site:1578": "node tools/verify_site.cjs http://127.0.0.1:8011/ 1.5.78.11833 output/playwright/site-1.5.78.11833",
     "verify:package:12620": "node tools/verify_package.cjs runtime/unity-webgl/practice-1.5.12620-live-timer-v57-formal output/playwright/package-1.5.12620",
     "verify:package:1578": "node tools/verify_package.cjs runtime/unity-webgl/practice-1.5.78.11833 output/playwright/package-1.5.78.11833"
   },
+  "dependencies": {
+    "better-sqlite3": "13.0.3",
+    "jose": "6.2.9",
+    "lucide-react": "1.31.0",
+    "next": "16.3.1",
+    "oauth4webapi": "3.8.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "4.4.3"
+  },
   "devDependencies": {
-    "playwright": "^1.55.0"
+    "@types/better-sqlite3": "7.6.13",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.8",
+    "@types/react-dom": "19.2.3",
+    "playwright": "1.62.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
   }
 }
