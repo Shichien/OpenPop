@@ -111,10 +111,10 @@ $env:AWS_SECRET_ACCESS_KEY='你的 R2 Secret Access Key'
 脚本只上传 `.data`、`.wasm` 和 `.framework.js`，逐个核验公开地址、Brotli 响应头和一年缓存头。部署服务时设置：
 
 ```text
-POP_R2_PUBLIC_URL=https://assets.example.com
+POP_R2_PUBLIC_URL=https://pub-1b49211ea9574b738e1f01da86abe74d.r2.dev
 ```
 
-版本清单会让加载器和小型 `StreamingAssets` 继续走当前站点，仅让三个大型文件走 R2。R2 公开域名需要允许练习站点发起跨域请求，并允许 `GET`、`HEAD` 请求。
+当前六个大型文件存放在 `openpop-assets` 存储桶。版本清单会让加载器和小型 `StreamingAssets` 继续走当前站点，仅让三个大型文件走 R2。R2 公开域名允许练习站点跨域发起 `GET`、`HEAD` 请求。
 
 ## 登录配置
 
