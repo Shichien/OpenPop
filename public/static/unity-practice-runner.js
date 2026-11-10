@@ -4,6 +4,29 @@ const canvas = document.getElementById("unity-canvas");
 const container = document.getElementById("unity-container");
 const warningBanner = document.getElementById("unity-warning");
 const version = new URLSearchParams(window.location.search).get("version");
+const PRACTICE_ASPECT_WIDTH = 16;
+const PRACTICE_ASPECT_HEIGHT = 9;
+
+function fitPracticeCanvas() {
+  const bounds = container.getBoundingClientRect();
+  const maxWidth = Math.max(0, Math.floor(bounds.width));
+  const maxHeight = Math.max(0, Math.floor(bounds.height));
+  let width = Math.floor(maxWidth / PRACTICE_ASPECT_WIDTH) * PRACTICE_ASPECT_WIDTH;
+  let height = (width / PRACTICE_ASPECT_WIDTH) * PRACTICE_ASPECT_HEIGHT;
+  if (height > maxHeight) {
+    height = Math.floor(maxHeight / PRACTICE_ASPECT_HEIGHT) * PRACTICE_ASPECT_HEIGHT;
+    width = (height / PRACTICE_ASPECT_HEIGHT) * PRACTICE_ASPECT_WIDTH;
+  }
+  if (width < PRACTICE_ASPECT_WIDTH || height < PRACTICE_ASPECT_HEIGHT) {
+    width = PRACTICE_ASPECT_WIDTH;
+    height = PRACTICE_ASPECT_HEIGHT;
+  }
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+}
+
+fitPracticeCanvas();
+new ResizeObserver(() => fitPracticeCanvas()).observe(container);
 
 let unityInstance = null;
 let loaderScript = null;
@@ -392,7 +415,9 @@ async function start() {
     productName: build.productName,
     productVersion: build.productVersion,
     showBanner,
+    devicePixelRatio: 1,
   };
+  fitPracticeCanvas();
   unityInstance = await window.createUnityInstance(canvas, config, (progress) => {
     send("practice-runner-progress", { progress });
   });

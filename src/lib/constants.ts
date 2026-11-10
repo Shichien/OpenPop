@@ -16,8 +16,8 @@ export const PRACTICE_ROOMS = Object.freeze(Object.keys(PRACTICE_ROUTES));
 
 export const CAMERA_PROJECTION = Object.freeze({
   baseline_world_height: 16.196809350584537,
-  minimum_aspect: 1.6,
-  maximum_aspect: 2.3916667,
+  minimum_aspect: 16 / 9,
+  maximum_aspect: 16 / 9,
 });
 
 export const IMMUTABLE_CACHE = "public, max-age=31536000, immutable";

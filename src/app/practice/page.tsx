@@ -3,6 +3,8 @@ import Script from "next/script";
 
 import SocialReplayPanel from "@/components/social-replay-panel";
 
+export const dynamic = "force-dynamic";
+
 const versions = ["1.5.78.11833", "1.5.12620"] as const;
 const debugActions = [
   ["ToggleNoclip", "飞行", "Noclip"],
@@ -103,7 +105,7 @@ export default function PracticePage() {
           </section>
         </aside>
       </main>
-      <Script src="/static/unity-practice.js" strategy="afterInteractive" />
+      <Script src="/static/unity-practice.js?v=16x9" strategy="afterInteractive" />
     </>
   );
 }

@@ -710,7 +710,7 @@ function createRunner(version) {
   frame.title = `Hollow Knight ${version}`;
   frame.allow = "autoplay; fullscreen";
   frame.dataset.mounted = "false";
-  frame.src = `/practice/runner?version=${encodeURIComponent(version)}`;
+  frame.src = `/practice/runner?version=${encodeURIComponent(version)}&layout=16x9`;
   gameHost.prepend(frame);
   state.frame = frame;
   state.runningVersion = version;
