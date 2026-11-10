@@ -35,6 +35,31 @@ const replayExportFrames = document.getElementById("replay-export-frames");
 const replayExportDownload = document.getElementById("replay-export-download");
 const replayExportDismiss = document.getElementById("replay-export-dismiss");
 const replayExportError = document.getElementById("replay-export-error");
+const localeSelect = document.getElementById("locale-select");
+
+const MESSAGES = {
+  "zh-CN": {
+    title: "苦痛之路", language: "语言", checkingBuild: "正在检查官方运行包", launchFailed: "启动失败",
+    replayRecorded: "Replay 已记录", exportReplay: "导出 Replay", dismissReplay: "暂不导出",
+    roomPrefix: "房间",
+  },
+  en: {
+    title: "Path of Pain", language: "Language", checkingBuild: "Checking official game build", launchFailed: "Launch failed",
+    replayRecorded: "Replay captured", exportReplay: "Export Replay", dismissReplay: "Not now",
+    roomPrefix: "Room",
+  },
+};
+
+async function readJsonResponse(response, context) {
+  const text = await response.text();
+  if (!text.trim()) throw new Error(`${context}: ${state.locale === "en" ? "the server returned an empty response" : "服务器返回了空响应"}`);
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("json")) {
+    throw new Error(`${context}: ${state.locale === "en" ? "the server returned non-JSON content" : "服务器返回了非 JSON 内容"}`);
+  }
+  try { return JSON.parse(text); }
+  catch { throw new Error(`${context}: ${state.locale === "en" ? "the server returned malformed JSON" : "服务器返回了损坏的 JSON"}`); }
+}
 
 const TIMER_SEGMENTS = [
   { room: "White_Palace_18", name: "R1" },
@@ -87,6 +112,8 @@ const state = {
     queue: [],
     exporting: false,
   },
+  locale: "zh-CN",
+  markers: { selected: 1, slots: Array.from({ length: 9 }, (_, index) => ({ slot: index + 1, occupied: false })) },
 };
 
 const PRACTICE_ROOM_LABELS = new Map([
@@ -144,7 +171,7 @@ async function exportCurrentReplay() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(replay),
     });
-    const payload = await response.json();
+    const payload = await readJsonResponse(response, "Replay export");
     if (!response.ok) {
       throw new Error(payload.detail || `Replay 导出失败：${response.status}`);
     }
@@ -192,7 +219,7 @@ async function loadReplayHeroManifest() {
   if (!response.ok) {
     throw new Error(`官方人物动画读取失败：${response.status}`);
   }
-  const payload = await response.json();
+  const payload = await readJsonResponse(response, "Hero animation manifest");
   if (!payload.hero?.clips || !payload.hero?.collections || !payload.hero?.atlases) {
     throw new Error("官方人物动画清单不完整");
   }
@@ -250,7 +277,7 @@ async function loadReplayRoom(sceneName) {
     if (!response.ok) {
       throw new Error(`当前房间回放读取失败：${response.status}`);
     }
-    const payload = await response.json();
+    const payload = await readJsonResponse(response, "Room replay");
     if (requestToken !== state.replayGhost.requestToken || state.replayGhost.roomName !== sceneName) {
       return;
     }
@@ -689,6 +716,23 @@ function createRunner(version) {
   state.runningVersion = version;
 }
 
+function applyLocale(locale) {
+  state.locale = locale === "en" ? "en" : "zh-CN";
+  window.localStorage.setItem("openpop-locale", state.locale);
+  document.documentElement.lang = state.locale;
+  localeSelect.value = state.locale;
+  const messages = MESSAGES[state.locale];
+  for (const node of document.querySelectorAll("[data-i18n]")) {
+    const value = messages[node.dataset.i18n];
+    if (value) node.textContent = value;
+  }
+  for (const button of debugButtons) button.textContent = state.locale === "en" ? button.dataset.labelEn : button.dataset.labelZh;
+  window.dispatchEvent(new CustomEvent("practice-locale-change", { detail: { locale: state.locale } }));
+}
+
+localeSelect.addEventListener("change", () => applyLocale(localeSelect.value));
+applyLocale(window.localStorage.getItem("openpop-locale") || (navigator.language.toLowerCase().startsWith("zh") ? "zh-CN" : "en"));
+
 async function switchVersion(version) {
   if (state.switching || version === state.runningVersion) {
     return;
@@ -697,6 +741,7 @@ async function switchVersion(version) {
   const build = state.builds.get(version);
   state.selectedVersion = version;
   window.localStorage.setItem("hk-practice-version", version);
+  window.localStorage.setItem("hk-practice-version-revision", "2");
   if (!build?.available) {
     showError(build?.error || `${version} 的官方运行包不可用`);
     return;
@@ -744,6 +789,10 @@ function handleRunnerMessage(event) {
     applyPracticeState(message);
   } else if (message.type === "practice-runner-debug-state") {
     setDebugButtonState(String(message.method || ""), Boolean(message.enabled));
+  } else if (message.type === "practice-runner-marker-state") {
+    state.markers = { selected: Number(message.selected) || 1, slots: Array.isArray(message.slots) ? message.slots : [] };
+    } else if (message.type === "practice-runner-recovery") {
+    setLoading(state.locale === "en" ? "Returning to the start bench" : "正在返回出生点长椅", message.room || "", 0.9);
   } else if (message.type === "practice-runner-replay-complete") {
     queueReplayExport(message.replay);
   } else if (message.type === "practice-runner-timer-command") {
@@ -755,12 +804,12 @@ function handleRunnerMessage(event) {
   }
 }
 
-function sendDebugCommand(method) {
+function sendDebugCommand(method, argument = "") {
   if (!state.frame?.contentWindow || state.status !== "running") {
     return false;
   }
   state.frame.contentWindow.postMessage(
-    { type: "practice-debug-command", method },
+    { type: "practice-debug-command", method, argument },
     window.location.origin,
   );
   if (statefulDebugMethods.has(method)) {
@@ -769,12 +818,21 @@ function sendDebugCommand(method) {
   return true;
 }
 
+async function ensureUnityAssetCache() {
+  if (!("serviceWorker" in navigator)) return false;
+  await navigator.serviceWorker.register("/unity-cache-sw.js", { scope: "/" });
+  await navigator.serviceWorker.ready;
+  if (navigator.storage?.persist) navigator.storage.persist().catch(() => false);
+  return true;
+}
+
 async function initialize() {
+  await ensureUnityAssetCache();
   const response = await fetch("/api/practice/builds", { cache: "no-store" });
   if (!response.ok) {
     throw new Error(`版本清单读取失败：${response.status}`);
   }
-  const manifest = await response.json();
+  const manifest = await readJsonResponse(response, "Build manifest");
   for (const build of manifest.versions || []) {
     state.builds.set(build.id, build);
     const input = versionInputs.find((candidate) => candidate.value === build.id);
@@ -783,11 +841,11 @@ async function initialize() {
     }
   }
 
-  const savedVersion = window.localStorage.getItem("hk-practice-version");
+  const preferenceRevision = window.localStorage.getItem("hk-practice-version-revision");
+  const savedVersion = preferenceRevision === "2" ? window.localStorage.getItem("hk-practice-version") : null;
   const savedBuild = state.builds.get(savedVersion);
-  const initialVersion = savedBuild?.available && savedBuild.replayCaptureAvailable
-    ? savedVersion
-    : manifest.defaultVersion;
+  const initialVersion = savedBuild?.available && savedBuild.replayCaptureAvailable ? savedVersion : manifest.defaultVersion;
+  window.localStorage.setItem("hk-practice-version-revision", "2");
   const initialInput = versionInputs.find((input) => input.value === initialVersion);
   if (initialInput) {
     initialInput.checked = true;
@@ -830,9 +888,7 @@ timerReset.addEventListener("click", () => {
 window.addEventListener("keydown", (event) => {
   if (event.code !== "F5" && event.code !== "F6") return;
   event.preventDefault();
-  if (event.code === "F5") {
-    requestOfficialTimerReset();
-  }
+  if (event.code === "F5") requestOfficialTimerReset();
 });
 
 document.addEventListener("visibilitychange", () => {
@@ -893,7 +949,7 @@ window.addEventListener("practice-replay-selection-change", async (event) => {
     const runId = String(selection.runId || "");
     try {
       const response = await fetch(`/api/social/replays/${encodeURIComponent(String(selection.runId))}`, { cache: "no-store" });
-      const payload = await response.json();
+      const payload = await readJsonResponse(response, "Build manifest");
       if (!response.ok) throw new Error(payload.detail || `Replay 读取失败：${response.status}`);
       const replay = payload.replay;
       if (replay?.scene_name !== sceneName) throw new Error("Replay 房间与当前场景不一致");
@@ -961,6 +1017,8 @@ window.render_game_to_text = () => JSON.stringify({
   runningVersion: state.runningVersion,
   switching: state.switching,
   progress: state.progress,
+  locale: state.locale,
+  markers: state.markers,
   practice: state.practice
     ? {
       currentRoom: state.practice.currentRoom,
@@ -1046,3 +1104,5 @@ initialize().catch((error) => {
 loadReplayHeroManifest().catch((error) => {
   setReplayGhostStatus(error instanceof Error ? error.message : String(error));
 });
+
+

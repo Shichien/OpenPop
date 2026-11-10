@@ -12,13 +12,13 @@
       }
     },
     "1.5.78.11833": {
-      "directory": "practice-1.5.78.11833",
+      "directory": "practice-1.5.78.11833-keyboard-queue-v4",
       "compression": "brotli",
       "replayCaptureAvailable": true,
       "files": {
-        "dataUrl": "original-practice-1.5.78.11833-marked-return-v2.data.br",
-        "frameworkUrl": "original-practice-1.5.78.11833-marked-return-v2.framework.js.br",
-        "codeUrl": "original-practice-1.5.78.11833-marked-return-v2.wasm.br"
+        "dataUrl": "original-practice-1.5.78.11833-keyboard-queue-candidate4.data.br",
+        "frameworkUrl": "original-practice-1.5.78.11833-keyboard-queue-candidate4.framework.js.br",
+        "codeUrl": "original-practice-1.5.78.11833-keyboard-queue-candidate4.wasm.br"
       }
     }
   }

@@ -16,6 +16,17 @@ let pendingReplayTransition = null;
 let closedReplayScene = null;
 let lastBridgedState = null;
 let practiceVisible = false;
+let recoveryActive = false;
+const PRACTICE_SCENES = new Set(["White_Palace_06", "White_Palace_18", "White_Palace_17", "White_Palace_19", "White_Palace_20"]);
+
+async function readJsonResponse(response, context) {
+  const text = await response.text();
+  if (!text.trim()) throw new Error(`${context}: server returned an empty response`);
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("json")) throw new Error(`${context}: server returned non-JSON content`);
+  try { return JSON.parse(text); }
+  catch { throw new Error(`${context}: server returned malformed JSON`); }
+}
 
 const PRACTICE_REPLAY_ROUTES = new Map([
   ["White_Palace_18", { entry: "White_Palace_06", exit: "White_Palace_17" }],
@@ -46,6 +57,19 @@ console.log = (...values) => {
       enabled: debugMatch[2] === "enabled",
     });
   }
+  const markerSlotsIndex = line.indexOf("ORIGINAL_PRACTICE_MARKER_SLOTS ");
+  if (markerSlotsIndex >= 0) {
+    const record = line.slice(markerSlotsIndex);
+    const selectedMatch = record.match(/selected=(\d+)/);
+    const slotsText = record.split(" slots=")[1] || "";
+    const slots = slotsText.split("|").filter(Boolean).map((entry) => {
+      const [slot, occupied, scene, x, y] = entry.split(",");
+      return { slot: Number(slot), occupied: occupied === "1", scene, x: Number(x) || 0, y: Number(y) || 0 };
+    });
+    send("practice-runner-marker-state", { selected: Number(selectedMatch?.[1]) || 1, slots });
+  }
+  const unexpectedIndex = line.indexOf("ORIGINAL_PRACTICE_UNEXPECTED_ROOM_ENTERED ");
+  if (unexpectedIndex >= 0) send("practice-runner-recovery", { room: line.slice(unexpectedIndex).match(/scene=([^\s]+)/)?.[1] || "" });
   const markerIndex = line.indexOf("ORIGINAL_PRACTICE_STATE ");
   if (markerIndex >= 0) {
     const fields = {};
@@ -274,15 +298,19 @@ function startStateBridge() {
     try {
       const compactState = readCompactPracticeState();
       if (!compactState) return;
-      if (
-        !practiceVisible
-        && compactState.currentRoom === "White_Palace_06"
-        && compactState.atBench === true
-      ) {
+      if (practiceVisible && compactState.currentRoom && !PRACTICE_SCENES.has(compactState.currentRoom) && !recoveryActive) {
+        recoveryActive = true;
+        discardReplayRecording();
+        send("practice-runner-recovery", { room: compactState.currentRoom });
+        unityInstance?.SendMessage("Original WebGL Practice Launcher", "ReturnToPracticeSpawn");
+      }
+      if (compactState.currentRoom === "White_Palace_06" && compactState.atBench === true) {
+        const becameReady = !practiceVisible || recoveryActive;
         practiceVisible = true;
+        recoveryActive = false;
         canvas.style.setProperty("visibility", "visible", "important");
         canvas.focus();
-        send("practice-runner-ready");
+        if (becameReady) send("practice-runner-ready");
       }
       if (closedReplayScene && closedReplayScene !== compactState.currentRoom) {
         closedReplayScene = null;
@@ -326,7 +354,7 @@ async function readBuild() {
   if (!response.ok) {
     throw new Error(`版本清单读取失败：${response.status}`);
   }
-  const manifest = await response.json();
+  const manifest = await readJsonResponse(response, "Build manifest");
   const build = (manifest.versions || []).find((candidate) => candidate.id === version);
   if (!build) {
     throw new Error(`未知的游戏版本：${version || "未指定"}`);
@@ -425,9 +453,14 @@ function handleMessage(event) {
       "ResetPracticeTimer",
       "ReturnToPracticeSpawn",
       "ReturnToMarkedPoint",
+      "CreateSelectedPracticeReturnPoint",
+      "ReturnToSelectedPracticeReturnPoint",
+      "HandlePracticeSlotCommand",
     ]);
     if (allowedMethods.has(method)) {
-      unityInstance.SendMessage("Original WebGL Practice Launcher", method);
+      const argument = String(event.data.argument || "");
+      if (method === "HandlePracticeSlotCommand") unityInstance.SendMessage("Original WebGL Practice Launcher", method, argument);
+      else unityInstance.SendMessage("Original WebGL Practice Launcher", method);
     }
   }
 }

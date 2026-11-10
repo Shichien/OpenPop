@@ -21,11 +21,13 @@ type LeaderboardRun = {
 type SelectedReplay = { runId: string; color: string; opacity: number };
 type ProviderState = { enabled: boolean; login_url: string };
 
-const ROOM_LABELS: Record<string, string> = {
-  White_Palace_18: "第一房",
-  White_Palace_17: "第二房",
-  White_Palace_19: "第三房",
-  White_Palace_20: "第四房",
+const ROOM_LABELS: Record<string, Record<string, string>> = {
+  "zh-CN": { White_Palace_18: "第一房", White_Palace_17: "第二房", White_Palace_19: "第三房", White_Palace_20: "第四房" },
+  en: { White_Palace_18: "Room 1", White_Palace_17: "Room 2", White_Palace_19: "Room 3", White_Palace_20: "Room 4" },
+};
+const COPY = {
+  "zh-CN": { leaderboard: "房间榜单", lobby: "前置房", logout: "退出", upload: "上传 Replay JSON", empty: "当前房间还没有用户成绩", loading: "正在载入 Replay" },
+  en: { leaderboard: "Room leaderboard", lobby: "Start room", logout: "Log out", upload: "Upload Replay JSON", empty: "No runs have been posted for this room", loading: "Loading Replay" },
 };
 const COLORS = ["#5be7c4", "#ffd166", "#8ab4ff", "#ff8fab", "#c7a7ff", "#f9a65a", "#76e5ff", "#c7f464"];
 
@@ -42,7 +44,14 @@ function avatar(user: User): string {
 
 async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const response = await fetch(input, init);
-  const payload = await response.json();
+  const text = await response.text();
+  if (!text.trim()) throw new Error(`服务器返回了空响应：${response.status}`);
+  if (!(response.headers.get("content-type") || "").toLowerCase().includes("json")) {
+    throw new Error(`服务器返回了非 JSON 内容：${response.status}`);
+  }
+  let payload: { detail?: string } & T;
+  try { payload = JSON.parse(text) as { detail?: string } & T; }
+  catch { throw new Error(`服务器返回了损坏的 JSON：${response.status}`); }
   if (!response.ok) {
     throw new Error(payload.detail || `请求失败：${response.status}`);
   }
@@ -62,6 +71,9 @@ export default function SocialReplayPanel() {
   const [leaderboardStatus, setLeaderboardStatus] = useState("");
   const [ghostStatus, setGhostStatus] = useState("");
   const [loading, setLoading] = useState(false);
+  const [locale, setLocale] = useState<"zh-CN" | "en">("zh-CN");
+  const copy = COPY[locale];
+  const roomLabels = ROOM_LABELS[locale];
 
   const selectedPayload = useMemo<SelectedReplay[]>(() => {
     return [...selected].map((runId, index) => ({
@@ -79,6 +91,14 @@ export default function SocialReplayPanel() {
         setUploadStatus("");
       })
       .catch(() => setUploadStatus("账号状态读取失败"));
+  }, []);
+
+  useEffect(() => {
+    const initial = document.documentElement.lang === "en" ? "en" : "zh-CN";
+    setLocale(initial);
+    const onLocale = (event: Event) => setLocale((event as CustomEvent<{ locale?: string }>).detail?.locale === "en" ? "en" : "zh-CN");
+    window.addEventListener("practice-locale-change", onLocale);
+    return () => window.removeEventListener("practice-locale-change", onLocale);
   }, []);
 
   useEffect(() => {
@@ -100,7 +120,7 @@ export default function SocialReplayPanel() {
   }, []);
 
   useEffect(() => {
-    if (!scene || !ROOM_LABELS[scene]) {
+    if (!scene || !roomLabels[scene]) {
       setRuns([]);
       setLeaderboardStatus("");
       return;
@@ -163,17 +183,17 @@ export default function SocialReplayPanel() {
   }
 
   return (
-    <section className="social-panel" aria-label="Replay 社区">
+    <section className="social-panel" aria-label={copy.leaderboard}>
       <header className="social-header">
-        <h2>房间榜单</h2>
-        <span className="social-room">{ROOM_LABELS[scene] || "前置房"}</span>
+        <h2>{copy.leaderboard}</h2>
+        <span className="social-room">{roomLabels[scene] || copy.lobby}</span>
       </header>
 
       {user ? (
         <div className="social-user">
           <img src={avatar(user)} alt="" />
           <span>{user.display_name}</span>
-          <button type="button" onClick={logout} title="退出登录">退出</button>
+          <button type="button" onClick={logout} title={copy.logout}>{copy.logout}</button>
         </div>
       ) : (
         <div className="social-login-buttons">
@@ -192,14 +212,14 @@ export default function SocialReplayPanel() {
       )}
 
       <label className={`social-upload ${!user ? "is-disabled" : ""}`}>
-        <span>上传 Replay JSON</span>
+        <span>{copy.upload}</span>
         <input type="file" accept=".json,.txt,.rtmc" disabled={!user} onChange={(event) => upload(event.target.files?.[0])} />
       </label>
       {uploadStatus ? <p className="social-status" role="status">{uploadStatus}</p> : null}
 
       <div className="social-runs">
         {leaderboardStatus ? <p className="social-empty is-error">{leaderboardStatus}</p> : null}
-        {scene && ROOM_LABELS[scene] && !loading && !runs.length ? <p className="social-empty">当前房间还没有用户成绩</p> : null}
+        {scene && roomLabels[scene] && !loading && !runs.length ? <p className="social-empty">{copy.empty}</p> : null}
         {runs.map((run) => (
           <label className={`social-run ${selected.has(run.run_id) ? "is-selected" : ""}`} key={run.run_id}>
             <input type="checkbox" checked={selected.has(run.run_id)} onChange={() => toggleRun(run.run_id)} />
@@ -210,7 +230,7 @@ export default function SocialReplayPanel() {
           </label>
         ))}
       </div>
-      {selected.size ? <p className="social-status" role="status">{ghostStatus || "正在载入 Replay"}</p> : null}
+      {selected.size ? <p className="social-status" role="status">{ghostStatus || copy.loading}</p> : null}
     </section>
   );
 }

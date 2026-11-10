@@ -5,12 +5,10 @@ import SocialReplayPanel from "@/components/social-replay-panel";
 
 const versions = ["1.5.78.11833", "1.5.12620"] as const;
 const debugActions = [
-  ["ToggleNoclip", "飞行"],
-  ["ToggleInfiniteHealth", "无限血量"],
-  ["ToggleInfiniteSoul", "无限灵魂"],
-  ["SetHazardRespawn", "设置保存点"],
-  ["SetPracticeReturnPoint", "标记返回点"],
-  ["ReturnToMarkedPoint", "返回标记点"],
+  ["ToggleNoclip", "飞行", "Noclip"],
+  ["ToggleInfiniteHealth", "无限血量", "Infinite health"],
+  ["ToggleInfiniteSoul", "无限灵魂", "Infinite soul"],
+  ["SetHazardRespawn", "设置保存点", "Set hazard save"],
 ] as const;
 
 export default function PracticePage() {
@@ -37,14 +35,15 @@ export default function PracticePage() {
               </div>
             </footer>
           </section>
+
           <div id="loading-screen" className="loading-screen" role="status" aria-live="polite">
             <div className="seal" aria-hidden="true" />
-            <p id="loading-title">正在检查官方运行包</p>
+            <p id="loading-title" data-i18n="checkingBuild">正在检查官方运行包</p>
             <div className="progress-track" aria-hidden="true"><span id="progress-fill" /></div>
             <p id="loading-detail" className="loading-detail" />
           </div>
           <div id="error-screen" className="error-screen" role="alert" hidden>
-            <p>启动失败</p>
+            <p data-i18n="launchFailed">启动失败</p>
             <strong id="error-message" />
           </div>
         </section>
@@ -56,7 +55,14 @@ export default function PracticePage() {
           <div className="debug-content">
             <header className="practice-header">
               <img className="panel-knight" src="/static/knight-ui.png" alt="" />
-              <h1>苦痛之路</h1>
+              <h1 data-i18n="title">苦痛之路</h1>
+              <label className="locale-picker">
+                <span className="sr-only" data-i18n="language">语言</span>
+                <select id="locale-select" defaultValue="zh-CN" aria-label="语言">
+                  <option value="zh-CN">中文</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
             </header>
 
             <fieldset className="version-picker" aria-label="游戏版本">
@@ -69,15 +75,8 @@ export default function PracticePage() {
             </fieldset>
 
             <fieldset className="debug-actions" aria-label="调试功能">
-              {debugActions.map(([method, label]) => (
-                <button
-                  type="button"
-                  data-debug-method={method}
-                  aria-pressed={method.startsWith("Toggle") ? "false" : undefined}
-                  key={method}
-                >
-                  {label}
-                </button>
+              {debugActions.map(([method, zh, en]) => (
+                <button type="button" data-debug-method={method} data-label-zh={zh} data-label-en={en} aria-pressed={method.startsWith("Toggle") ? "false" : undefined} key={method}>{zh}</button>
               ))}
             </fieldset>
 
@@ -91,14 +90,14 @@ export default function PracticePage() {
           </div>
           <section id="replay-export-prompt" className="replay-export-prompt" role="dialog" aria-labelledby="replay-export-title" hidden>
             <div className="replay-export-summary" aria-live="polite">
-              <strong id="replay-export-title">Replay 已记录</strong>
+              <strong id="replay-export-title" data-i18n="replayRecorded">Replay 已记录</strong>
               <span id="replay-export-room" />
               <span id="replay-export-time" />
               <span id="replay-export-frames" />
             </div>
             <div className="replay-export-actions">
-              <button id="replay-export-download" type="button">导出 Replay</button>
-              <button id="replay-export-dismiss" type="button">暂不导出</button>
+              <button id="replay-export-download" type="button" data-i18n="exportReplay">导出 Replay</button>
+              <button id="replay-export-dismiss" type="button" data-i18n="dismissReplay">暂不导出</button>
             </div>
             <p id="replay-export-error" role="alert" hidden />
           </section>
